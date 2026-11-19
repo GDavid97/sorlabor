@@ -1,4 +1,4 @@
-﻿# Sörlabor · BeerLab · Bierlabor – otthoni sörfőzés laborpontossággal
+# Sörlabor · BeerLab · Bierlabor – otthoni sörfőzés laborpontossággal
 
 React + Vite webapp: maláták, komlók, élesztők és ízesítők (hopline.hu kínálata alapján) dinamikus összeállítása,
 élő számításokkal és főzési/erjesztési előírással.
