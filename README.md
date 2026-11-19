@@ -1,4 +1,4 @@
-# Sörlabor · BeerLab · Bierlabor – otthoni sörfőzés laborpontossággal
+﻿# Sörlabor · BeerLab · Bierlabor – otthoni sörfőzés laborpontossággal
 
 React + Vite webapp: maláták, komlók, élesztők és ízesítők (hopline.hu kínálata alapján) dinamikus összeállítása,
 élő számításokkal és főzési/erjesztési előírással.
@@ -46,12 +46,12 @@ Az árak és a műszaki értékek tipikus/becsült értékek; a pontos alfasavat
 - Katalógus-, stílus- és receptleírások: `src/i18n/data.ts` (azonosító szerint).
 - Ellenőrzés: `npm run i18n:check` – kiírja a hiányzó vagy felesleges fordításokat.
 
-## Hostolás (ingyenes: Cloudflare Pages)
-1. **Élesítés előtt:** töltsd ki az üzemeltető adatait a `src/legal/config.ts` fájlban (név, kapcsolattartási e-mail) – ezek jelennek meg az adatvédelmi tájékoztatóban (`#/privacy`).
-2. Tedd a kódot egy GitHub-tárolóba, majd a Cloudflare-en: **Workers & Pages → Create → Pages → Connect to Git**.
-   - Build command: `npm run build` · Build output directory: `dist`
-   - Alternatíva Git nélkül: `npx wrangler pages deploy dist`
-3. **Saját domain:** a Pages projekt → *Custom domains* → `sorlabor.hu`. A gyökérdomainhez a domaint fel kell venni a Cloudflare-re (ingyenes csomag), és a .hu regisztrátornál a névszervereket a Cloudflare által megadottakra kell állítani. A `www.sorlabor.hu` és az ékezetes `sörlabor.hu` (`xn--srlabor-90a.hu`) 301-gyel irányítható a fő címre.
-4. A HTTPS automatikus. A gyorsítótár- és biztonsági fejléceket a `public/_headers` fájl állítja be (Cloudflare Pages / Netlify); Apache alapú magyar tárhelyen ugyanezt a `public/.htaccess` végzi.
+## Hostolás (ingyenes: Cloudflare Workers, statikus fájlok)
+1. Az üzemeltető adatai a `src/legal/config.ts` fájlban vannak (név, kapcsolattartási e-mail) – ezek jelennek meg az adatvédelmi tájékoztatóban (`#/privacy`).
+2. Élő cím: https://sorlabor.dgapps.workers.dev – a Worker beállításait a `wrangler.jsonc` adja.
+   - **Automatikus telepítés:** a Worker be van kötve a GitHub-tárolóhoz (Cloudflare Workers Builds), minden push a `main` ágra kimegy. Build command: `npm run build` · Deploy command: `npx wrangler deploy`
+   - Kézi telepítés: `npm run build && npx wrangler deploy`
+3. **Saját domain:** a `wrangler.jsonc`-ba: `"routes": [{ "pattern": "sorlabor.hu", "custom_domain": true }]` (a `"workers_dev": true` maradjon benne, különben a workers.dev cím kikapcsol). A gyökérdomainhez a domaint fel kell venni a Cloudflare-re (ingyenes csomag), és a .hu regisztrátornál a névszervereket a Cloudflare által megadottakra kell állítani. A `www.sorlabor.hu` és az ékezetes `sörlabor.hu` (`xn--srlabor-90a.hu`) 301-gyel irányítható a fő címre.
+4. A HTTPS automatikus. A gyorsítótár- és biztonsági fejléceket a `public/_headers` fájl állítja be (Cloudflare Workers / Pages / Netlify); Apache alapú magyar tárhelyen ugyanezt a `public/.htaccess` végzi.
 
 **Adatvédelem:** nincs süti, nincs analitika, a betűtípusok saját tárhelyről jönnek (nincs adattovábbítás a Google felé), szigorú CSP minden külső forrást tilt. A felhasználói adatok csak a böngészőben tárolódnak; az adatvédelmi oldalon egy gombbal törölhetők.
