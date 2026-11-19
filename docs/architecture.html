@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sörlabor – technikai architektúra</title>
+<style>
+  :root {
+    --bg: #fbf8f3; --surface: #ffffff; --surface-2: #f4eee4; --border: #e4d8c6; --text: #2a1d10; --text-2: #5b4733; --muted: #86725c;
+    --accent: #e0862a; --accent-soft: rgba(242,169,59,.16); --accent-text: #9c5208; --good: #2c8048; --code-bg: #f1ebe1;
+    --c1: #e0862a; --c2: #3f86b8; --c3: #2c8048; --c4: #8c5bb5; --c5: #c0432b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #120e0a; --surface: #1c1610; --surface-2: #251d15; --border: #3b2f22; --text: #f4ead9; --text-2: #cdbba2; --muted: #8f7c66;
+      --accent: #f2a93b; --accent-soft: rgba(242,169,59,.14); --accent-text: #f2a93b; --good: #72c48d; --code-bg: #1a140e;
+      --c1: #f2a93b; --c2: #7fb6d9; --c3: #72c48d; --c4: #b996dc; --c5: #ec7a62;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #120e0a; --surface: #1c1610; --surface-2: #251d15; --border: #3b2f22; --text: #f4ead9; --text-2: #cdbba2; --muted: #8f7c66;
+    --accent: #f2a93b; --accent-soft: rgba(242,169,59,.14); --accent-text: #f2a93b; --good: #72c48d; --code-bg: #1a140e;
+    --c1: #f2a93b; --c2: #7fb6d9; --c3: #72c48d; --c4: #b996dc; --c5: #ec7a62;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15.5px/1.65 system-ui, -apple-system, "Segoe UI", Inter, sans-serif; }
+  a { color: var(--accent-text); }
+  code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 5px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; overflow-x: auto; line-height: 1.55; }
+  pre code { background: none; padding: 0; }
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; max-width: 1260px; margin: 0 auto; padding: 0 24px 80px; }
+  nav.toc { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding: 28px 0; font-size: 14px; }
+  nav.toc .brand { font-weight: 800; font-size: 18px; margin-bottom: 4px; }
+  nav.toc .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 18px; }
+  nav.toc a { display: block; color: var(--text-2); text-decoration: none; padding: 5px 10px; border-radius: 8px; border-left: 2px solid transparent; }
+  nav.toc a:hover { background: var(--surface-2); color: var(--text); border-left-color: var(--accent); }
+  .theme-btn { margin-top: 18px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+  main { padding-top: 28px; min-width: 0; }
+  header.hero { padding: 26px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+  header.hero .eyebrow { color: var(--accent-text); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+  h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.1; margin: 8px 0 10px; }
+  h2 { font-size: 26px; margin: 54px 0 12px; padding-top: 8px; scroll-margin-top: 16px; }
+  h3 { font-size: 18px; margin: 26px 0 8px; }
+  p { color: var(--text-2); margin: 8px 0 12px; }
+  .lead { font-size: 17.5px; color: var(--text-2); max-width: 820px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 22px 0; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .kpi b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .kpi span { color: var(--muted); font-size: 12.5px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); padding: 9px 12px; }
+  td { padding: 9px 12px; border-top: 1px solid var(--border); vertical-align: top; color: var(--text-2); }
+  td:first-child { color: var(--text); }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; margin: 14px 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); margin: 2px 4px 2px 0; }
+  .pill.g { background: rgba(44,128,72,.13); color: var(--good); }
+  .note { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 10px 14px; border-radius: 0 10px 10px 0; color: var(--text); margin: 14px 0; }
+  .tree { line-height: 1.5; }
+  .tree .d { color: var(--accent-text); font-weight: 700; }
+  .tree .c { color: var(--muted); }
+  figure { margin: 18px 0; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  svg text { font-family: system-ui, "Segoe UI", sans-serif; }
+  .bar { height: 10px; border-radius: 5px; background: var(--accent); }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; gap: 0; padding: 0 16px 60px; }
+    nav.toc { position: static; max-height: none; padding-bottom: 0; }
+    nav.toc a { display: inline-block; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Tartalom">
+  <div class="brand">🍺 Sörlabor</div>
+  <div class="sub">Technikai architektúra · v0.1.0</div>
+  <a href="#attekintes">Áttekintés</a>
+  <a href="#stack">Technológiai stack</a>
+  <a href="#architektura">Architektúra</a>
+  <a href="#utvonalak">Útvonalak</a>
+  <a href="#csomagok">Kódfelosztás és csomagok</a>
+  <a href="#mappak">Mappaszerkezet</a>
+  <a href="#adatmodell">Adatmodell és adatfolyam</a>
+  <a href="#szamitas">Számítási motor</a>
+  <a href="#allapot">Állapot és tárolás</a>
+  <a href="#i18n">Többnyelvűség (i18n)</a>
+  <a href="#pwa">PWA és offline</a>
+  <a href="#ui">UI, témák, grafikonok</a>
+  <a href="#fozonap">Főzőnap mód: időzítők</a>
+  <a href="#biztonsag">Biztonság és adatvédelem</a>
+  <a href="#build">Build, eszközök, ellenőrzés</a>
+  <a href="#korlatok">Ismert korlátok, továbbfejlesztés</a>
+  <button class="theme-btn" id="themeBtn" type="button">🌓 Téma váltása</button>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Sörlabor · BeerLab · Bierlabor</div>
+  <h1>Technikai architektúra</h1>
+  <p class="lead">Otthoni sörfőző webapp: receptépítő élő számításokkal, BJCP stílusegyezés, főzőnap mód időzítőkkel, erjedéskövetés, kalibráció, vízkémia és költségszámítás – három nyelven, telepíthető PWA-ként, teljesen kliensoldalon, backend nélkül.</p>
+</header>
+
+<section id="attekintes">
+  <div class="kpis">
+    <div class="kpi"><b>~10 200</b><span>sor TypeScript / TSX</span></div>
+    <div class="kpi"><b>~900</b><span>sor CSS (saját, framework nélkül)</span></div>
+    <div class="kpi"><b>4</b><span>futásidejű függőség</span></div>
+    <div class="kpi"><b>0</b><span>backend, adatbázis, süti</span></div>
+    <div class="kpi"><b>55 KB</b><span>landing JS (gzip)</span></div>
+    <div class="kpi"><b>3</b><span>nyelv (HU / EN / DE)</span></div>
+    <div class="kpi"><b>140+</b><span>alapanyag a katalógusban</span></div>
+    <div class="kpi"><b>31</b><span>beépített recept, 45 BJCP stílus</span></div>
+  </div>
+  <h3>Tervezési alapelvek</h3>
+  <ul>
+    <li><b>Statikus, kliensoldali app.</b> Minden számítás a böngészőben fut, minden felhasználói adat a böngésző helyi tárolójában marad. Bármilyen statikus tárhelyen futtatható.</li>
+    <li><b>Tiszta számítási réteg.</b> A <code>src/lib</code> függvényei mellékhatásmentesek: <code>Recipe → Stats</code>. A UI csak megjeleníti az eredményt, így a logika React nélkül, Node-ban is tesztelhető.</li>
+    <li><b>Minimális függőség.</b> Nincs router, állapotkezelő, UI-könyvtár vagy grafikonkönyvtár – mindez néhány száz sor saját kód. Kisebb csomag, kevesebb frissítési teher.</li>
+    <li><b>Teljesítmény elsőként.</b> A landing kicsi, a nehéz részek lusta betöltésűek és háttérben előtöltődnek; az animációk csak <code>transform</code>/<code>opacity</code> alapúak.</li>
+    <li><b>Adatvédelem alapból.</b> Nincs harmadik féltől betöltött erőforrás (a betűtípusok is saját tárhelyről jönnek), szigorú CSP.</li>
+  </ul>
+</section>
+
+<section id="stack">
+  <h2>Technológiai stack</h2>
+  <table>
+    <thead><tr><th>Réteg</th><th>Eszköz</th><th>Verzió</th><th>Szerep</th></tr></thead>
+    <tbody>
+      <tr><td>UI</td><td>React + ReactDOM</td><td>18.3.1</td><td>Komponensek, <code>lazy</code> / <code>Suspense</code> kódfelosztás, StrictMode</td></tr>
+      <tr><td>Nyelv</td><td>TypeScript</td><td>5.6.3</td><td><code>strict</code>, <code>noUnusedLocals/Parameters</code>; a build előtt <code>tsc -b</code> fut</td></tr>
+      <tr><td>Build</td><td>Vite + @vitejs/plugin-react</td><td>5.4.11 / 4.3.4</td><td>Fejlesztői szerver HMR-rel, Rollup alapú éles build, CSS-felosztás csomagonként</td></tr>
+      <tr><td>Betűtípusok</td><td>@fontsource/inter, @fontsource/fraunces</td><td>5.3.0</td><td>Saját tárhelyről kiszolgált woff2 (latin + latin-ext a magyar ő/ű miatt)</td></tr>
+      <tr><td>PWA</td><td>saját Vite plugin (<code>pwa-plugin.ts</code>)</td><td>–</td><td>Service worker generálása build közben, verziózott precache</td></tr>
+      <tr><td>Script futtatás</td><td>esbuild (a Vite része)</td><td>–</td><td>Az i18n-ellenőrző Node-szkript bundle-ölése</td></tr>
+    </tbody>
+  </table>
+  <div class="card">
+    <b>Amit szándékosan <u>nem</u> használ:</b>
+    <span class="pill">router</span><span class="pill">Redux / Zustand</span><span class="pill">UI kit</span><span class="pill">Tailwind</span><span class="pill">chart könyvtár</span><span class="pill">i18n könyvtár</span><span class="pill">Workbox</span><span class="pill">backend</span>
+    <p style="margin-bottom:0">Helyettük: hash alapú útválasztó (~20 sor), <code>useState</code> + localStorage, CSS változós témák, kézzel írt SVG grafikonok, saját <code>t()</code> függvény és saját service worker generátor.</p>
+  </div>
+</section>
+
+<section id="architektura">
+  <h2>Architektúra</h2>
+  <p>A belépési pont (<code>src/main.tsx</code>) egy kis hash-router. A landing azonnal betöltődik, a Főzőpult (<code>App.tsx</code>) és az adatvédelmi oldal külön csomagban, lustán érkezik. A számítási réteg és az adatok egy közös csomagban vannak, amelyet a Főzőpult és a landing receptszekciója is használ.</p>
+  <figure>
+    <svg viewBox="0 0 1000 520" role="img" aria-label="Architektúra diagram">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      </defs>
+      <!-- böngésző keret -->
+      <rect x="10" y="10" width="980" height="500" rx="18" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="6 6"/>
+      <text x="30" y="38" font-size="14" fill="var(--muted)" font-weight="700">BÖNGÉSZŐ (kliens) – nincs backend</text>
+
+      <!-- main -->
+      <rect x="380" y="56" width="240" height="60" rx="12" fill="var(--surface)" stroke="var(--c1)" stroke-width="2"/>
+      <text x="500" y="82" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">main.tsx</text>
+      <text x="500" y="102" text-anchor="middle" font-size="12.5" fill="var(--text-2)">hash-router · SW regisztráció</text>
+
+      <!-- landing -->
+      <rect x="40" y="170" width="250" height="92" rx="12" fill="var(--surface)" stroke="var(--c2)" stroke-width="2"/>
+      <text x="165" y="196" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Landing</text>
+      <text x="165" y="216" text-anchor="middle" font-size="12.5" fill="var(--text-2)">#/ · azonnal betöltődik</text>
+      <text x="165" y="236" text-anchor="middle" font-size="12.5" fill="var(--text-2)">i18n/lang.ts + landing/text.ts</text>
+      <text x="165" y="252" text-anchor="middle" font-size="11.5" fill="var(--muted)">↳ LandingRecipes (lazy)</text>
+
+      <!-- app -->
+      <rect x="375" y="170" width="250" height="92" rx="12" fill="var(--surface)" stroke="var(--c1)" stroke-width="2"/>
+      <text x="500" y="196" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Főzőpult (App.tsx)</text>
+      <text x="500" y="216" text-anchor="middle" font-size="12.5" fill="var(--text-2)">#/app · lazy + előtöltés</text>
+      <text x="500" y="236" text-anchor="middle" font-size="12.5" fill="var(--text-2)">recept állapot, panelek,</text>
+      <text x="500" y="252" text-anchor="middle" font-size="12.5" fill="var(--text-2)">főzőnap mód, napló</text>
+
+      <!-- privacy -->
+      <rect x="710" y="170" width="250" height="92" rx="12" fill="var(--surface)" stroke="var(--c4)" stroke-width="2"/>
+      <text x="835" y="196" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Adatvédelem</text>
+      <text x="835" y="216" text-anchor="middle" font-size="12.5" fill="var(--text-2)">#/privacy · lazy</text>
+      <text x="835" y="236" text-anchor="middle" font-size="12.5" fill="var(--text-2)">legal/text.ts · adattörlés</text>
+
+      <line x1="440" y1="116" x2="200" y2="168" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="500" y1="116" x2="500" y2="168" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="560" y1="116" x2="800" y2="168" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#arr)"/>
+
+      <!-- shared chunk -->
+      <rect x="200" y="310" width="600" height="96" rx="14" fill="var(--accent-soft)" stroke="var(--c1)" stroke-width="2"/>
+      <text x="500" y="336" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Közös csomag: számítási réteg + adatok + fordítások</text>
+      <text x="500" y="358" text-anchor="middle" font-size="12.5" fill="var(--text-2)">lib/calc · style · plan · brewmode · water · ferment · shopping · costs …</text>
+      <text x="500" y="378" text-anchor="middle" font-size="12.5" fill="var(--text-2)">data/malts · hops · yeasts · adjuncts · styles · presets · i18n/en · de · data</text>
+      <text x="500" y="396" text-anchor="middle" font-size="11.5" fill="var(--muted)">tiszta függvények: Recipe → Stats (React nélkül is futtatható)</text>
+      <line x1="200" y1="262" x2="300" y2="308" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="500" y1="262" x2="500" y2="308" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#arr)"/>
+
+      <!-- storage + SW -->
+      <rect x="40" y="436" width="420" height="58" rx="12" fill="var(--surface)" stroke="var(--c3)" stroke-width="2"/>
+      <text x="250" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text)">localStorage (sorlabor.*)</text>
+      <text x="250" y="480" text-anchor="middle" font-size="12" fill="var(--text-2)">receptek · napló · kalibráció · árak · beállítások</text>
+      <rect x="540" y="436" width="420" height="58" rx="12" fill="var(--surface)" stroke="var(--c5)" stroke-width="2"/>
+      <text x="750" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text)">Service worker + Cache Storage</text>
+      <text x="750" y="480" text-anchor="middle" font-size="12" fill="var(--text-2)">verziózott precache · offline működés</text>
+      <path d="M375 250 C 320 290, 170 285, 170 340 L 170 432" fill="none" stroke="var(--c3)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+    </svg>
+    <figcaption>Futásidejű felépítés. A szaggatott nyíl a perzisztenciát jelöli (a Főzőpult olvas/ír a localStorage-ba).</figcaption>
+  </figure>
+</section>
+
+<section id="utvonalak">
+  <h2>Útvonalak</h2>
+  <p>Hash alapú útválasztás (<code>location.hash</code> + <code>hashchange</code>): statikus tárhelyen nem kell szerveroldali átírási szabály, és a PWA offline is minden útvonalat kezel.</p>
+  <table>
+    <thead><tr><th>Útvonal</th><th>Oldal</th><th>Megjegyzés</th></tr></thead>
+    <tbody>
+      <tr><td><code>#/</code></td><td>Landing</td><td>Animált kezdőoldal; tétlen időben előtölti a Főzőpultot</td></tr>
+      <tr><td><code>#/app</code></td><td>Főzőpult</td><td>A fő munkatér</td></tr>
+      <tr><td><code>#/app/tour</code></td><td>Főzőpult + bemutató</td><td>Mintarecepttel indul a 12 lépéses körbevezetés</td></tr>
+      <tr><td><code>#/app/recipes</code></td><td>Főzőpult + recepttár</td><td>A beépített receptek galériájával nyílik</td></tr>
+      <tr><td><code>#/app/recipe/&lt;id&gt;</code></td><td>Főzőpult + recept</td><td>Egy adott beépített receptet tölt be (landing „Megfőzöm” gomb)</td></tr>
+      <tr><td><code>#/privacy</code></td><td>Adatvédelmi tájékoztató</td><td>Három nyelven, helyi adattörlés gombbal</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="csomagok">
+  <h2>Kódfelosztás és csomagok</h2>
+  <p>Az éles build (<code>npm run build</code>) kimenete. A méretek gzip-pel tömörítve értendők; a landing csak az első két sort tölti be az első megjelenéshez.</p>
+  <table>
+    <thead><tr><th>Csomag</th><th>Tartalom</th><th>Mikor töltődik</th><th class="r">JS (gzip)</th><th style="width:22%"></th></tr></thead>
+    <tbody>
+      <tr><td><code>index-*.js</code> + <code>.css</code></td><td>React, router, landing, lang.ts, betűtípus CSS</td><td>azonnal</td><td class="r">55,3 KB</td><td><div class="bar" style="width:69%"></div></td></tr>
+      <tr><td><code>LandingRecipes-*.js</code></td><td>Landing receptszekció</td><td>a szekció közelébe görgetve</td><td class="r">1,1 KB</td><td><div class="bar" style="width:2%"></div></td></tr>
+      <tr><td><code>presetMeta-*.js</code></td><td>Számítási réteg, katalógus, receptek, EN/DE szótárak</td><td>receptszekció vagy Főzőpult</td><td class="r">79,6 KB</td><td><div class="bar" style="width:100%"></div></td></tr>
+      <tr><td><code>App-*.js</code> + <code>.css</code></td><td>Főzőpult komponensek és stílusok</td><td>tétlen időben előtöltve / <code>#/app</code></td><td class="r">45,4 KB</td><td><div class="bar" style="width:57%"></div></td></tr>
+      <tr><td><code>Privacy-*.js</code></td><td>Adatvédelmi oldal és szövegei</td><td><code>#/privacy</code></td><td class="r">7,1 KB</td><td><div class="bar" style="width:9%"></div></td></tr>
+      <tr><td><code>sw.js</code></td><td>Generált service worker</td><td>első betöltés után</td><td class="r">2,4 KB*</td><td><div class="bar" style="width:3%"></div></td></tr>
+    </tbody>
+  </table>
+  <p class="muted" style="font-size:13px">* tömörítetlen méret. CSS: landing 5,9 KB, Főzőpult 7,6 KB, adatvédelem 0,6 KB (gzip). Betűtípus: 68 woff2/woff fájl, a böngésző csak a ténylegesen használt <code>unicode-range</code> szeleteket tölti le.</p>
+  <div class="note"><b>Előtöltési stratégia:</b> a landing <code>requestIdleCallback</code>-kel (és a CTA gombok <code>mouseenter</code>/<code>focus</code> eseményére) meghívja az <code>import('./App')</code>-ot, így kattintáskor a Főzőpult szinte azonnal megjelenik. A landing receptszekcióját egy <code>IntersectionObserver</code> indítja (900 px előre), 4 mp-es tartalékkal; addig csontváz-kártyák tartják a helyet, így nincs elrendezés-ugrás.</div>
+</section>
+
+<section id="mappak">
+  <h2>Mappaszerkezet</h2>
+<pre class="tree"><code><span class="d">beer/</span>
+├── index.html              <span class="c"># belépő HTML: meta, manifest, ikonok, theme-init.js, boot-loader</span>
+├── vite.config.ts          <span class="c"># base: './', React + PWA plugin</span>
+├── pwa-plugin.ts           <span class="c"># saját Vite plugin: sw.js generálása precache listával + verzió-hash</span>
+├── tsconfig.json           <span class="c"># strict TypeScript</span>
+├── package.json            <span class="c"># scriptek: dev, build, preview, i18n:check</span>
+├── README.md
+├── <span class="d">docs/</span>
+│   └── architecture.html   <span class="c"># ez a dokumentum</span>
+├── <span class="d">scripts/</span>
+│   └── i18n-check.ts       <span class="c"># fordítás-ellenőrző: hiányzó / felesleges kulcsok, adatfordítások</span>
+├── <span class="d">public/</span>                 <span class="c"># változatlanul kerül a dist/-be</span>
+│   ├── manifest.webmanifest
+│   ├── theme-init.js       <span class="c"># téma beállítása festés előtt (külön fájl a szigorú CSP miatt)</span>
+│   ├── _headers            <span class="c"># Cloudflare Pages / Netlify: cache + biztonsági fejlécek</span>
+│   ├── .htaccess           <span class="c"># ugyanez Apache tárhelyre</span>
+│   └── <span class="d">icons/</span>              <span class="c"># 192/512 any + maskable, apple-touch-icon</span>
+└── <span class="d">src/</span>
+    ├── main.tsx            <span class="c"># hash-router, lazy oldalak, SW regisztráció, betűtípus importok</span>
+    ├── App.tsx             <span class="c"># Főzőpult: recept állapot, fejléc, beállítások, modálok</span>
+    ├── types.ts            <span class="c"># domain típusok: Malt, Hop, Yeast, Recipe, BrewSession, Reading…</span>
+    ├── styles.css          <span class="c"># Főzőpult stílusok, témaváltozók (sötét / világos)</span>
+    ├── <span class="d">data/</span>               <span class="c"># statikus katalógus (TS tömbök)</span>
+    │   ├── malts.ts  hops.ts  yeasts.ts  adjuncts.ts
+    │   ├── styles.ts       <span class="c"># 45 BJCP 2021 stílus tartományokkal</span>
+    │   ├── presets.ts      <span class="c"># 31 beépített recept tömör leírással</span>
+    │   └── water.ts        <span class="c"># vízprofilok, berendezés alapértékek</span>
+    ├── <span class="d">lib/</span>                <span class="c"># tiszta logika (React nélkül tesztelhető)</span>
+    │   ├── calc.ts         <span class="c"># Recipe → Stats: OG, FG, ABV, IBU, szín, ízprofil, térfogatok</span>
+    │   ├── style.ts        <span class="c"># BJCP egyezés pontozása + javaslatok</span>
+    │   ├── plan.ts         <span class="c"># főzési, erjesztési és palackozási terv</span>
+    │   ├── brewmode.ts     <span class="c"># főzőnap lépések, riasztások, korrekciók</span>
+    │   ├── ferment.ts      <span class="c"># erjedés állapota: halad / lassú / elakadt / kész</span>
+    │   ├── water.ts        <span class="c"># ionok, sók, RA, becsült cefre pH</span>
+    │   ├── shopping.ts     <span class="c"># bevásárlólista, csomag-optimalizálás, saját árak</span>
+    │   ├── costs.ts        <span class="c"># rezsi: energia, víz, kupak, szállítás</span>
+    │   ├── sessions.ts     <span class="c"># főzési napló, kalibráció számítása</span>
+    │   ├── scale.ts        <span class="c"># batch-méret arányos skálázása</span>
+    │   ├── storage.ts      <span class="c"># localStorage, import/export, BeerXML</span>
+    │   ├── presets.ts  presetMeta.ts  names.ts  catalog.ts  describe.ts
+    │   ├── pwa.ts          <span class="c"># SW regisztráció, telepítési prompt, online állapot</span>
+    │   ├── theme.ts  sound.ts
+    ├── <span class="d">components/</span>         <span class="c"># Főzőpult UI</span>
+    │   ├── IngredientPanel.tsx  Results.tsx  Plans.tsx
+    │   ├── BrewMode.tsx  BrewLog.tsx  FermentTracker.tsx
+    │   ├── PresetPicker.tsx  PrintSheet.tsx  Tour.tsx  tourSteps.tsx  ui.tsx
+    ├── <span class="d">landing/</span>            <span class="c"># kezdőoldal (kicsi, gyors csomag)</span>
+    │   ├── Landing.tsx  LandingRecipes.tsx  landing.css  text.ts
+    ├── <span class="d">legal/</span>              <span class="c"># adatvédelmi tájékoztató</span>
+    │   ├── Privacy.tsx  privacy.css  text.ts
+    │   └── config.ts       <span class="c"># üzemeltető és tárhely adatai – élesítés előtt kitöltendő</span>
+    └── <span class="d">i18n/</span>
+        ├── lang.ts         <span class="c"># nyelvválasztás, márkanév – szótárak nélkül (landing is ezt használja)</span>
+        ├── index.ts        <span class="c"># t(), td(), szám- és dátumformázás</span>
+        ├── en.ts  de.ts    <span class="c"># felületi szótárak (kulcs = magyar szöveg)</span>
+        └── data.ts         <span class="c"># katalógus-, stílus- és receptleírások azonosító szerint</span></code></pre>
+</section>
+
+<section id="adatmodell">
+  <h2>Adatmodell és adatfolyam</h2>
+  <p>A középpont a <code>Recipe</code> típus. A Főzőpult egyetlen <code>useState&lt;Recipe&gt;</code> állapotot tart; minden változáskor a <code>computeStats()</code> (memoizálva) újraszámolja a <code>Stats</code>-ot, amelyből az összes panel dolgozik. Nincs külön tárolt „számolt” állapot – minden levezetett érték mindig konzisztens.</p>
+  <figure>
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Adatfolyam diagram">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+      <rect x="20" y="110" width="170" height="80" rx="12" fill="var(--surface)" stroke="var(--c1)" stroke-width="2"/>
+      <text x="105" y="142" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Recipe</text>
+      <text x="105" y="164" text-anchor="middle" font-size="12" fill="var(--text-2)">useState + localStorage</text>
+      <rect x="250" y="110" width="190" height="80" rx="12" fill="var(--accent-soft)" stroke="var(--c1)" stroke-width="2"/>
+      <text x="345" y="142" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">computeStats()</text>
+      <text x="345" y="164" text-anchor="middle" font-size="12" fill="var(--text-2)">tiszta függvény, useMemo</text>
+      <rect x="500" y="110" width="150" height="80" rx="12" fill="var(--surface)" stroke="var(--c3)" stroke-width="2"/>
+      <text x="575" y="142" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Stats</text>
+      <text x="575" y="164" text-anchor="middle" font-size="12" fill="var(--text-2)">OG FG ABV IBU EBC…</text>
+      <line x1="190" y1="150" x2="248" y2="150" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#arr2)"/>
+      <line x1="440" y1="150" x2="498" y2="150" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#arr2)"/>
+      <g font-size="12.5" fill="var(--text)">
+        <rect x="720" y="14" width="260" height="34" rx="9" fill="var(--surface)" stroke="var(--border)"/><text x="732" y="36">matchStyle / styleHints → stílus</text>
+        <rect x="720" y="56" width="260" height="34" rx="9" fill="var(--surface)" stroke="var(--border)"/><text x="732" y="78">brewDayPlan / fermentationPlan → terv</text>
+        <rect x="720" y="98" width="260" height="34" rx="9" fill="var(--surface)" stroke="var(--border)"/><text x="732" y="120">buildBrewSteps → főzőnap mód</text>
+        <rect x="720" y="140" width="260" height="34" rx="9" fill="var(--surface)" stroke="var(--border)"/><text x="732" y="162">waterResult → vízkémia</text>
+        <rect x="720" y="182" width="260" height="34" rx="9" fill="var(--surface)" stroke="var(--border)"/><text x="732" y="204">shoppingList + overheads → költség</text>
+        <rect x="720" y="224" width="260" height="34" rx="9" fill="var(--surface)" stroke="var(--border)"/><text x="732" y="246">describeBeer + ízprofil → leírás</text>
+        <rect x="720" y="266" width="260" height="30" rx="9" fill="var(--surface)" stroke="var(--border)"/><text x="732" y="286">fermentStatus(session) → erjedés</text>
+      </g>
+      <g stroke="var(--muted)" stroke-width="1.2" fill="none">
+        <path d="M650 150 C690 150 690 31 718 31"/><path d="M650 150 C690 150 690 73 718 73"/><path d="M650 150 C690 150 690 115 718 115"/>
+        <path d="M650 150 C690 150 690 157 718 157"/><path d="M650 150 C690 150 690 199 718 199"/><path d="M650 150 C690 150 690 241 718 241"/><path d="M650 150 C690 150 690 281 718 281"/>
+      </g>
+    </svg>
+    <figcaption>Egyirányú adatfolyam: a recept az egyetlen forrás, minden más levezetett érték.</figcaption>
+  </figure>
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0">Fő típusok (<code>src/types.ts</code>)</h3>
+      <ul style="margin:0;padding-left:18px;color:var(--text-2)">
+        <li><code>Malt</code>, <code>Hop</code>, <code>Yeast</code>, <code>Adjunct</code> – katalógus tételek ízvektorral (<code>FlavorVec</code>)</li>
+        <li><code>BeerStyle</code> – BJCP tartományok, élesztőtípusok, kötelező összetevők</li>
+        <li><code>Recipe</code> – sorok (<code>FermentableLine</code>, <code>HopLine</code>, <code>AdjunctLine</code>), berendezés, víz, szénsav</li>
+        <li><code>BrewSession</code> – recept-pillanatkép, mérések, időzítő, <code>readings</code></li>
+        <li><code>Reading</code> – erjedési mérés (idő, SG, hőfok, jegyzet)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Miért pillanatkép?</h3>
+      <p style="margin:0">A <code>BrewSession</code> a főzés indításakor lemásolja a receptet. Így a napló és a kalibráció akkor is pontos marad, ha a receptet később módosítod – a mért értékek mindig ahhoz a változathoz tartoznak, amit ténylegesen megfőztél.</p>
+    </div>
+  </div>
+</section>
+
+<section id="szamitas">
+  <h2>Számítási motor</h2>
+  <p>Az összes képlet a <code>src/lib</code> mappában van, mértékegységek: kg, g, L, °C, SG; a szín belül SRM, megjelenítésben EBC.</p>
+  <table>
+    <thead><tr><th>Érték</th><th>Módszer</th><th>Fájl</th></tr></thead>
+    <tbody>
+      <tr><td>Kezdeti sűrűség (OG)</td><td>pont = kihozatal% × 385,6 × kg × hatásfok / L (a szacharóz 46,2 PPG-jének metrikus megfelelője); kivonat és cukor 100% hatásfokkal</td><td><code>calc.ts</code></td></tr>
+      <tr><td>Végső sűrűség (FG)</td><td>élesztő átlagos erjedési foka ± cefrehőfok (1,5%/°C), − karamellmaláta-arány, + egyszerű cukrok; nem erjeszthető cukrok (laktóz) külön</td><td><code>calc.ts</code></td></tr>
+      <tr><td>Alkohol</td><td>(OG − FG) × 131,25, gyümölcsből származó cukor hozzáadva</td><td><code>calc.ts</code></td></tr>
+      <tr><td>Keserűség (IBU)</td><td>Tinseth-képlet; FWH +10%, whirlpool 30% kihasználtsággal, hidegkomló 0</td><td><code>calc.ts</code></td></tr>
+      <tr><td>Szín</td><td>Morey-képlet: SRM = 1,4922 × MCU<sup>0,6859</sup>; EBC = SRM × 1,97; hex szín SRM-táblából interpolálva</td><td><code>calc.ts</code></td></tr>
+      <tr><td>Kalória</td><td>ASBC: valódi extrakt és alkohol tömeg alapján, 0,5 l-re</td><td><code>calc.ts</code></td></tr>
+      <tr><td>Ízprofil (9 tengely)</td><td>hozzávalók ízvektorainak súlyozott összege, telítés: 10·(1 − e<sup>−x/5</sup>); komlóaroma az adagolás módja szerint súlyozva</td><td><code>calc.ts</code></td></tr>
+      <tr><td>Stílusegyezés</td><td>paraméterenként 1, ha tartományon belül, egyébként lineárisan csökken; súlyok: OG 0,2 · FG 0,15 · ABV 0,15 · IBU 0,2 · szín 0,2 · élesztő 0,1; hiányzó kötelező összetevő ×0,8</td><td><code>style.ts</code></td></tr>
+      <tr><td>Vízkémia</td><td>sók ionhozzájárulása; maradék lúgosság (RA); cefre pH = gabona pH (súlyozott) + RA hatás; tejsav javaslat 5,4 pH-ra</td><td><code>water.ts</code></td></tr>
+      <tr><td>Térfogatok, beütési hőfok</td><td>elpárolgás, üst- és fermentorveszteség, gabona elnyelés; T<sub>víz</sub> = T + (0,41/R)·(T − T<sub>gabona</sub>)</td><td><code>calc.ts</code>, <code>plan.ts</code></td></tr>
+      <tr><td>Szénsavasítás</td><td>maradék CO₂ a max. erjedési hőfokból; priming cukor; keg nyomás a CO₂-hőfok összefüggésből</td><td><code>plan.ts</code></td></tr>
+      <tr><td>Élesztőadag</td><td>gyártói dózis: ale 60, lager 100, kveik 40 g/hl, erős sörnél ×1,3–1,6</td><td><code>plan.ts</code></td></tr>
+      <tr><td>Kalibráció</td><td>mért OG és térfogat → valódi főzőházi hatásfok; elpárolgás, üstveszteség; az utolsó 5 főzés átlaga</td><td><code>sessions.ts</code></td></tr>
+      <tr><td>Erjedés állapota</td><td>stabil = két, ≥ 1,7 nap különbségű mérés ≤ 0,001 eltéréssel; a cél FG + 0,004-en belül „kész”, felette „elakadt”</td><td><code>ferment.ts</code></td></tr>
+      <tr><td>Energia</td><td>víz felfűtése (4,186 kJ/kg·°C, 85% hatásfok) + cefre tartása (15% kitöltés) + forralás (80%)</td><td><code>costs.ts</code></td></tr>
+    </tbody>
+  </table>
+  <div class="note">A 31 beépített receptet ugyanez a motor validálja: mindegyik 97–100%-os egyezést ad a saját BJCP stílusával.</div>
+</section>
+
+<section id="allapot">
+  <h2>Állapot és tárolás</h2>
+  <p>Nincs globális állapotkezelő: a Főzőpult állapota az <code>App</code> komponensben él, a komponensek propokon és egy <code>update(fn)</code> függvényen keresztül módosítják. A perzisztencia <code>localStorage</code>, minden hozzáférés <code>try/catch</code>-ben (privát mód, letiltott tároló esetén az app tárolás nélkül is működik).</p>
+  <table>
+    <thead><tr><th>Kulcs</th><th>Tartalom</th></tr></thead>
+    <tbody>
+      <tr><td><code>sorlabor.current.v1</code></td><td>Az épp szerkesztett recept (automatikus mentés)</td></tr>
+      <tr><td><code>sorlabor.library.v1</code></td><td>Mentett receptek</td></tr>
+      <tr><td><code>sorlabor.sessions.v1</code></td><td>Főzési napló: pillanatképek, mérések, időzítő, erjedési mérések</td></tr>
+      <tr><td><code>sorlabor.calibration.v1</code></td><td>Alapértelmezett kalibrált berendezés módszerenként</td></tr>
+      <tr><td><code>sorlabor.prices.v1</code> · <code>sorlabor.costs.v1</code></td><td>Saját árak, rezsi- és költségbeállítások</td></tr>
+      <tr><td><code>sorlabor.lang.v1</code> · <code>sorlabor.theme.v1</code></td><td>Nyelv és téma</td></tr>
+      <tr><td><code>sorlabor.scaleBatch.v1</code> · <code>sorlabor.onboarded.v1</code></td><td>Skálázás kapcsoló, első indítás jelző</td></tr>
+    </tbody>
+  </table>
+  <p>A kulcsok verziózottak (<code>.v1</code>), a régi vagy importált receptek egy <code>normalize()</code> függvényen mennek át, amely pótolja a hiányzó mezőket és kiszűri az ismeretlen katalógus-azonosítókat. Export: JSON (receptek), BeerXML 1.0 (BeerSmith, Brewfather), nyomtatható főzőlap (<code>@media print</code>).</p>
+</section>
+
+<section id="i18n">
+  <h2>Többnyelvűség (i18n)</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0">Kulcs = magyar szöveg</h3>
+      <p>A felületen <code>t('Hozzávalók')</code> hívások vannak, helyőrzőkkel: <code>t('{n} csomag', {'{'} n {'}'})</code>. Előny: a kód olvasható marad, és hiányzó fordítás esetén is értelmes (magyar) szöveg jelenik meg, sosem üres. Az <code>en.ts</code> és a <code>de.ts</code> egyszerű <code>Record&lt;string, string&gt;</code>.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Adatfordítás azonosító szerint</h3>
+      <p>A katalógus és a receptek leírásai (~200 tétel) a <code>i18n/data.ts</code>-ben vannak, <code>td(fajta, id, mező, alapérték)</code> olvassa. A márkanév nyelvenként eltér: Sörlabor / BeerLab / Bierlabor (<code>lang.ts</code> → <code>BRAND</code>).</p>
+    </div>
+  </div>
+  <ul>
+    <li><b>Kétszintű betöltés:</b> a <code>lang.ts</code> könnyű (nincs benne szótár), ezt használja a landing és az adatvédelmi oldal a saját kis szövegfájljával. A nagy szótárak csak a Főzőpult csomagjában vannak.</li>
+    <li><b>Nyelvváltás:</b> a gyökérelem <code>key={'{'}lang{'}'}</code> attribútuma újrarajzolja a felületet; a memoizált számítások a nyelvet is függőségként kapják.</li>
+    <li><b>Formázás:</b> <code>dec()</code> – angolul tizedespont, magyarul és németül vessző; dátum és pénz <code>toLocaleString</code>-gel.</li>
+    <li><b>Ellenőrzés:</b> <code>npm run i18n:check</code> regexszel kigyűjti a <code>t('…')</code> kulcsokat és az adatokból a címkéket, majd kiírja a hiányzó és felesleges fordításokat (jelenleg 0 / 0, összesen ~800 kulcs).</li>
+  </ul>
+</section>
+
+<section id="pwa">
+  <h2>PWA és offline működés</h2>
+  <p>Workbox helyett egy kb. 80 soros saját Vite plugin (<code>pwa-plugin.ts</code>) a <code>generateBundle</code> fázisban legenerálja a <code>sw.js</code>-t:</p>
+  <ul>
+    <li><b>Precache lista</b> a build tényleges kimenetéből (minden JS/CSS csomag, manifest, ikonok, <code>theme-init.js</code>); a betűtípusokból csak a latin és latin-ext woff2 (12 fájl a 68-ból).</li>
+    <li><b>Verzió</b> = a fájllista SHA-1 hash-ének eleje (pl. <code>sorlabor-f6b7906b8b</code>). Új build → új <code>sw.js</code> → új gyorsítótár, aktiváláskor a régi törlődik (<code>skipWaiting</code> + <code>clients.claim</code>).</li>
+    <li><b>Stratégiák:</b> navigáció = hálózat először, offline esetén a gyorsítótárazott oldal; statikus fájlok = gyorsítótár először (a hash-elt fájlnevek miatt biztonságos).</li>
+    <li>A regisztráció csak éles buildben történik (<code>import.meta.env.PROD</code>), hogy ne zavarja a fejlesztői HMR-t.</li>
+  </ul>
+<pre><code>// pwa-plugin.ts (részlet)
+generateBundle(_opts, bundle) {
+  const files = Object.keys(bundle).filter(/* .map és nem-latin betűtípusok nélkül */);
+  const precache = ['./', ...files, ...extra];
+  const version = createHash('sha1').update(precache.join('|')).digest('hex').slice(0, 10);
+  this.emitFile({ type: 'asset', fileName: 'sw.js', source: serviceWorker(version, precache) });
+}</code></pre>
+  <p>Kiegészítők a <code>lib/pwa.ts</code>-ben: <code>beforeinstallprompt</code> elkapása és „📲 Telepítés” gomb (<code>useInstallPrompt</code>), online/offline jelző (<code>useOnline</code>). A manifest standalone módot, maskable ikonokat és parancsikonokat (Főzőpult, Receptek) definiál.</p>
+</section>
+
+<section id="ui">
+  <h2>UI, témák, grafikonok</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0">Témák CSS változókkal</h3>
+      <p>Minden szín token (<code>--bg</code>, <code>--surface</code>, <code>--accent</code>, <code>--accent-text</code>…). A világos téma a <code>:root[data-theme='light']</code> alatt írja felül őket; a „Rendszer szerint” mód a <code>prefers-color-scheme</code>-et követi. A <code>theme-init.js</code> még a React előtt beállítja a témát, így nincs villanás.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Kézzel írt SVG grafikonok</h3>
+      <p>Ízprofil radar (9 tengely), erjedési görbék (SG és hőfok két külön diagramon – nincs kettős tengely), sörpohár a számolt színnel, pontszám-gyűrű, tartománysávok. Rámutatásra tooltip, <code>role="img"</code> + <code>aria-label</code>, és mellettük mindig van táblázatos nézet.</p>
+    </div>
+  </div>
+  <ul>
+    <li><b>Animációk:</b> csak <code>transform</code> és <code>opacity</code> (GPU-n komponálható), kivétel a landing pohár lassú színváltása. A hős szekció animációi <code>IntersectionObserver</code>-rel megállnak, ha nem látszanak; <code>prefers-reduced-motion</code> esetén minden animáció kikapcsol.</li>
+    <li><b>Görgetésre beúszás:</b> <code>IntersectionObserver</code> + passzív görgetés-ellenőrzés tartaléknak, elemenként egyszer.</li>
+    <li><b>Bemutató (tour):</b> saját komponens; a kiemelés négy sötétítő panel a kivágás körül (megbízhatóbb, mint egy óriás <code>box-shadow</code>), a pozíciót időzítő és görgetés-figyelő követi.</li>
+    <li><b>Számmezők:</b> saját <code>Num</code> / <code>OptNum</code> – gépelés közbeni félkész értékek, vesszős tizedes, ↑/↓ léptetés, a sűrűség 1052 / 1,052 / °Plato formában is.</li>
+    <li><b>Reszponzív:</b> CSS Grid, töréspontok 1100 / 900 / 720 / 620 px-nél; mobilon a főzőnap mód lépéslistája lenyíló.</li>
+  </ul>
+</section>
+
+<section id="fozonap">
+  <h2>Főzőnap mód: időzítők</h2>
+  <ul>
+    <li><b>Újratöltésbiztos időzítő:</b> az időzítő nem számlálót, hanem időbélyegeket tárol (<code>startedAt</code>, <code>elapsedMs</code>) a <code>BrewSession</code>-ben, így oldal-újratöltés vagy a telefon lezárása után is pontos.</li>
+    <li><b>Riasztások:</b> a forralási hozzáadások a hátralévő idő szerint sülnek el; a már elsütött és nyugtázott riasztások külön listában vannak, így semmi nem szól kétszer.</li>
+    <li><b>Hang:</b> WebAudio oszcillátor (nincs hangfájl), első kattintásra „feloldva” a böngésző autoplay-szabálya miatt; mellette <code>navigator.vibrate</code>.</li>
+    <li><b>Értesítés:</b> Notification API, ha a lap a háttérben van.</li>
+    <li><b>Képernyő ébren tartása:</b> Screen Wake Lock API, láthatóság-váltáskor újrakérve.</li>
+  </ul>
+</section>
+
+<section id="biztonsag">
+  <h2>Biztonság és adatvédelem</h2>
+  <table>
+    <thead><tr><th>Intézkedés</th><th>Részletek</th></tr></thead>
+    <tbody>
+      <tr><td>Szigorú CSP</td><td><code>default-src 'self'; script-src 'self'</code> – nincs inline szkript (ezért külön fájl a <code>theme-init.js</code>), nincs külső forrás. Böngészőben ellenőrizve: 0 szabálysértés.</td></tr>
+      <tr><td>Egyéb fejlécek</td><td>HSTS, <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code>, <code>Permissions-Policy</code>, <code>frame-ancestors 'none'</code> – <code>public/_headers</code> és <code>public/.htaccess</code></td></tr>
+      <tr><td>Nincs harmadik fél</td><td>Betűtípusok saját tárhelyről, nincs analitika, nincs süti, nincs CDN-szkript</td></tr>
+      <tr><td>Adatminimalizálás</td><td>Minden felhasználói adat csak a böngészőben; a szerver csak statikus fájlokat szolgál ki</td></tr>
+      <tr><td>Tájékoztató és törlés</td><td><code>#/privacy</code> három nyelven; „Minden adatom törlése”: localStorage kulcsok, Cache Storage és service worker eltávolítása</td></tr>
+      <tr><td>Gyorsítótár-fejlécek</td><td><code>assets/*</code> 1 év <code>immutable</code>; <code>index.html</code>, <code>sw.js</code>, <code>manifest</code>, <code>theme-init.js</code> <code>no-cache</code> – különben elakadnának a frissítések</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="build">
+  <h2>Build, eszközök, ellenőrzés</h2>
+  <table>
+    <thead><tr><th>Parancs</th><th>Mit csinál</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run dev</code></td><td>Vite fejlesztői szerver HMR-rel (SW nélkül)</td></tr>
+      <tr><td><code>npm run build</code></td><td><code>tsc -b</code> típusellenőrzés, majd Vite build a <code>dist/</code>-be + <code>sw.js</code> generálás</td></tr>
+      <tr><td><code>npm run preview</code></td><td>Az éles build helyi kiszolgálása (itt aktív a PWA)</td></tr>
+      <tr><td><code>npm run i18n:check</code></td><td>Fordítás-ellenőrzés (hiányzó / felesleges kulcsok, adatfordítások)</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b><code>base: './'</code></b> és hash-router: a build bármilyen almappából, bármilyen statikus tárhelyről fut, szerveroldali beállítás nélkül.</li>
+    <li><b>Logika-tesztek:</b> mivel a <code>lib</code> tiszta TypeScript, a fejlesztés során esbuild-del Node-ra bundle-ölt ad hoc szkriptek ellenőrizték a képleteket (pl. a 31 recept stílusegyezése, skálázás invarianciája, erjedési állapotfelismerés, költségszámítás).</li>
+    <li><b>Vizuális ellenőrzés:</b> headless Edge képernyőképek (asztali és mobil szélesség, sötét és világos téma, három nyelv); a CSP-t fejléceket küldő helyi szerverrel és a konzolnapló figyelésével, egy szándékos szabálysértéssel kalibrálva.</li>
+    <li><b>Hosting:</b> ajánlott a Cloudflare Pages (build: <code>npm run build</code>, kimenet: <code>dist</code>), részletek a README-ben.</li>
+  </ul>
+</section>
+
+<section id="korlatok">
+  <h2>Ismert korlátok, továbbfejlesztés</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0">Korlátok</h3>
+      <ul style="margin:0;padding-left:18px;color:var(--text-2)">
+        <li>Nincs állandó automatizált tesztcsomag (a logika-tesztek ad hoc szkriptek voltak) – érdemes Vitestre átemelni.</li>
+        <li>A számítások becslések (ízprofil, cefre pH, energia); a katalógus árai és értékei tipikus, nem élő adatok.</li>
+        <li>Az adatok eszközhöz kötöttek: nincs szinkron gépek között (csak JSON export/import).</li>
+        <li>Az <code>App.tsx</code> nagy (~550 sor) – a fejléc és a modálok külön komponensbe szervezhetők.</li>
+        <li>A magyar szöveg mint fordítási kulcs: a magyar szöveg módosításakor a kulcsot az EN/DE szótárban is át kell írni (az ellenőrző jelzi).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Lehetséges következő lépések</h3>
+      <ul style="margin:0;padding-left:18px;color:var(--text-2)">
+        <li>Vitest egységtesztek a <code>lib</code> mappára, CI (GitHub Actions: típusellenőrzés, i18n, build, deploy).</li>
+        <li>Recept megosztása linkkel (a recept tömörítve az URL-ben, szerver nélkül).</li>
+        <li>Raktárkészlet és a bevásárlólista összekötése.</li>
+        <li>Opcionális szinkron (pl. EU-s backend-szolgáltatás) – ekkor bővíteni kell az adatvédelmi tájékoztatót.</li>
+        <li>Folyékony élesztők és starter-kalkulátor.</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:30px;color:var(--muted);font-size:13px">Készült: 2026. november · a forráskód állapota alapján (v0.1.0).</p>
+</section>
+</main>
+</div>
+<script>
+  (function () {
+    var btn = document.getElementById('themeBtn');
+    btn.addEventListener('click', function () {
+      var root = document.documentElement;
+      var cur = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    });
+  })();
+</script>
+</body>
+</html>
