@@ -78,7 +78,7 @@ const HU: LandingText = {
     cta: 'Irány a főzőpult',
     recipes: 'Bevált recepttel kezdek',
   },
-  footer: 'Alapanyagok a hopline.hu kínálata alapján. Az értékek becslések – mérj, jegyzetelj, kísérletezz.',
+  footer: 'Alapanyagok a hopline.hu kínálata alapján – az app független, nem áll kapcsolatban a hopline.hu-val. Az értékek becslések – mérj, jegyzetelj, kísérletezz.',
   privacy: 'Adatvédelmi tájékoztató',
 };
 
@@ -143,7 +143,7 @@ const EN: LandingText = {
     cta: 'Into the brewhouse',
     recipes: 'Start with a proven recipe',
   },
-  footer: 'Ingredients based on the hopline.hu range. All values are estimates – measure, take notes, experiment.',
+  footer: 'Ingredients based on the hopline.hu range – this app is independent and not affiliated with hopline.hu. All values are estimates – measure, take notes, experiment.',
   privacy: 'Privacy policy',
 };
 
@@ -208,7 +208,7 @@ const DE: LandingText = {
     cta: 'Ab ins Sudhaus',
     recipes: 'Mit bewährtem Rezept starten',
   },
-  footer: 'Zutaten basierend auf dem Sortiment von hopline.hu. Alle Werte sind Schätzungen – messen, notieren, experimentieren.',
+  footer: 'Zutaten basierend auf dem Sortiment von hopline.hu – die App ist unabhängig und steht in keiner Verbindung zu hopline.hu. Alle Werte sind Schätzungen – messen, notieren, experimentieren.',
   privacy: 'Datenschutz',
 };
 

@@ -58,7 +58,7 @@ const HU: PrivacyText = {
     {
       h: '4. Külső oldalak',
       p: [
-        'A bevásárlólistában a hopline.hu webáruházra mutató hivatkozások vannak. Ezek csak akkor nyitják meg a külső oldalt, ha rákattintasz – onnantól a hopline.hu adatkezelési tájékoztatója érvényes. Az app semmilyen adatot nem küld a hopline.hu-nak.',
+        'A bevásárlólistában a hopline.hu webáruházra mutató hivatkozások vannak. Ezek csak akkor nyitják meg a külső oldalt, ha rákattintasz – onnantól a hopline.hu adatkezelési tájékoztatója érvényes. Az app semmilyen adatot nem küld a hopline.hu-nak. Az app független, nem áll kapcsolatban a hopline.hu-val, és azt nem is támogatja vagy ajánlja.',
         'A betűtípusok és minden más fájl a saját tárhelyünkről töltődik, harmadik fél (pl. Google) felé nem történik adattovábbítás.',
       ],
     },
@@ -136,7 +136,7 @@ const EN: PrivacyText = {
     {
       h: '4. External sites',
       p: [
-        'The shopping list contains links to the hopline.hu web shop. They only open the external site if you click them – from then on hopline.hu’s privacy policy applies. The app sends no data to hopline.hu.',
+        'The shopping list contains links to the hopline.hu web shop. They only open the external site if you click them – from then on hopline.hu’s privacy policy applies. The app sends no data to hopline.hu. The app is independent and is not affiliated with, endorsed or sponsored by hopline.hu.',
         'Fonts and all other files are loaded from our own hosting; no data is transferred to third parties such as Google.',
       ],
     },
@@ -208,7 +208,7 @@ const DE: PrivacyText = {
     {
       h: '4. Externe Seiten',
       p: [
-        'Die Einkaufsliste enthält Links zum Webshop hopline.hu. Sie öffnen die externe Seite nur, wenn du sie anklickst – ab dann gilt die Datenschutzerklärung von hopline.hu. Die App sendet keine Daten an hopline.hu.',
+        'Die Einkaufsliste enthält Links zum Webshop hopline.hu. Sie öffnen die externe Seite nur, wenn du sie anklickst – ab dann gilt die Datenschutzerklärung von hopline.hu. Die App sendet keine Daten an hopline.hu. Die App ist unabhängig und steht in keiner Verbindung zu hopline.hu; sie wird von hopline.hu weder unterstützt noch empfohlen.',
         'Schriftarten und alle anderen Dateien werden von unserem eigenen Hosting geladen; es findet keine Übermittlung an Dritte wie Google statt.',
       ],
     },
